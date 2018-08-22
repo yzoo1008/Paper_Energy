@@ -3,7 +3,6 @@ import openpyxl
 import os
 
 
-input_dim = 8
 train = dict()
 test = dict()
 
@@ -12,7 +11,7 @@ for year in range(2014, 2015):
 	sheet = wb.worksheets[0]
 	row_c = sheet.max_row
 	col_c = sheet.max_column
-	for row in range(2, row_c + 1):
+	for row in range(row_c, 1, -1):
 		y = sheet[row][0].value
 		m = sheet[row][1].value
 		d = sheet[row][2].value
@@ -45,7 +44,7 @@ for year in range(2018, 2019):
 	sheet = wb.worksheets[0]
 	row_c = sheet.max_row
 	col_c = sheet.max_column
-	for row in range(2, row_c + 1):
+	for row in range(row_c, 1, -1):
 		y = sheet[row][0].value
 		m = sheet[row][1].value
 		d = sheet[row][2].value
@@ -73,13 +72,22 @@ for year in range(2018, 2019):
 					test[date].append(0)
 
 
+key_train = sorted(train)
+key_test = sorted(test)
+
+train_npy = []
+test_npy = []
+
+for key in key_train:
+	print(key, train[key])
+	train_npy.append(train[key])
+
+for key in key_test:
+	print(key, test[key])
+	test_npy.append(test[key])
+
 if not "data" in os.listdir("./"):
 	os.mkdir("data")
 
-np.save("./data/train.npy", train)
-np.save("./data/test.npy", test)
-
-
-# data2 = np.load("./data/2014.npy")
-# for key in data2.item().keys():
-# 	print(data2.item().get(key))
+np.save("./data/train.npy", train_npy)
+np.save("./data/test.npy", test_npy)

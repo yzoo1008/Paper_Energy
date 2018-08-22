@@ -1,6 +1,8 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import openpyxl
+
 
 tf.set_random_seed(777)
 
@@ -11,7 +13,7 @@ hidden_dim = 5
 output_dim = 1
 num_stacked_layers = 3
 learning_rate = 0.01
-num_epoch = 1000
+num_epoch = 300
 check_step = 10
 
 def MinMaxScaler(data):
@@ -19,6 +21,10 @@ def MinMaxScaler(data):
 	denominator = np.max(data, 0) - np.min(data, 0)
 	return numerator / (denominator+ 1e-7)
 
+def reverse(data, origin):
+	min = np.min(origin, 0)
+	max = np.max(origin, 0)
+	return data * (max[0] - min[0] + 1e-7) + min[0]
 
 def DataGen(name):
 	xy = np.load("./data/" + name + ".npy")
@@ -83,9 +89,41 @@ with tf.Session() as sess:
 	rmse_val = sess.run(rmse, feed_dict={targets: testY, predictions: test_predict})
 	print("RMSE: {}".format(rmse_val))
 
-	plt.plot(testY)
-	plt.plot(test_predict)
-	plt.xlabel("Time Period")
-	plt.ylabel("Stock Price")
+	# plt.plot(testY)
+	# plt.plot(test_predict)
+	# plt.xlabel("Time Period")
+	# plt.ylabel("Stock Price")
+	# plt.show()
+
+	tx = np.load("./data/test.npy")
+	testdataY = reverse(testY, tx)
+
+	sum = 0.
+	result = []
+	for i in range(len(testX)):
+		lastX = np.reshape(testX[i], (-1, seq_length, data_dim))
+		lastPredict = sess.run(Y_pred, feed_dict={X: lastX})
+		lastPredict = reverse(lastPredict, tx)
+		aa = abs(testdataY[i, 0] - lastPredict[0, 0]) / testdataY[i] * 100
+		sum = sum + aa
+		# print(lastPredict[0,0],testdataY[i],100-aa)
+
+		result.append(lastPredict[0, 0])
+	print("average: ", 100 - sum / len(testX))
+
+	wr = openpyxl.load_workbook('./score.xlsx')
+	wrr = wr.active
+
+	wrr.cell(row=1, column=1).value = "Predict"
+	wrr.cell(row=1, column=2).value = "Truth"
+	for i in range(1, len(testX) + 1):
+		wrr.cell(row=i + 1, column=1).value = result[i - 1]
+		wrr.cell(row=i + 1, column=2).value = testdataY[i - 1, 0]
+
+	wr.save("./score.xlsx")
+	wr.close()
+
+	plt.plot(result)
+	plt.plot(testdataY)
 	plt.show()
 

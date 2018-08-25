@@ -15,7 +15,7 @@ output_dim = 1
 num_stacked_layers = 3
 learning_rate = 0.0005
 num_epoch = 10000
-check_step = 10000
+check_step = 5000
 
 def MinMaxScaler(data):
 	numerator = data - np.min(data, 0)
@@ -50,8 +50,14 @@ def lstm_cell(ReLu = False):
 
 def rnn_cell(ReLu = False):
 	if ReLu:
-		return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, state_is_tuple=True, activation=tf.nn.relu)
-	return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, state_is_tuple=True, activation=tf.tanh)
+		return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
+	return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.tanh)
+
+
+def gru_cell(ReLu = False):
+	if ReLu:
+		return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
+	return tf.contrib.rnn.GRUCell(num_units=hidden_dim, activation=tf.nn.tanh)
 
 
 trainData = read(2014, 2017)
@@ -103,7 +109,7 @@ with tf.Session() as sess:
 	test_y = reverse(testY, test_xy)
 
 	error_sum = 0.
-	max_diff = 0.
+	max_error = 0.
 	result = []
 	for i in range(len(testX)):
 		testX_one = np.reshape(testX[i], (-1, seq_length, data_dim))
@@ -111,12 +117,12 @@ with tf.Session() as sess:
 		test_y_pred = reverse(test_y_pred, test_xy)
 		aa = abs(test_y[i, 0] - test_y_pred[0, 0]) / test_y[i, 0] * 100
 		error_sum = error_sum + aa
-		if max_diff < abs(test_y[i, 0] - test_y_pred[0, 0]):
-			max_diff = abs(test_y[i, 0] - test_y_pred[0, 0])
+		if max_error < aa:
+			max_error = (test_y[i, 0] - test_y_pred[0, 0]) / test_y[i, 0] * 100
 		result.append(test_y_pred[0, 0])
 
 	print("average error: ", error_sum / len(testX), "%")
-	print("max diff: ", max_diff)
+	print("max diff: ", max_error, "%")
 
 	if not "score.xlsx" in os.listdir("./"):
 		wb = openpyxl.Workbook()

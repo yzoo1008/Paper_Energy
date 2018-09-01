@@ -13,9 +13,9 @@ data_dim = 5
 hidden_dim = 5
 output_dim = 1
 num_stacked_layers = 3
-learning_rate = 0.0005
-num_epoch = 10000
-check_step = 5000
+learning_rate = 0.001
+num_epoch = 5000
+check_step = 10000
 
 def MinMaxScaler(data):
 	numerator = data - np.min(data, 0)
@@ -48,15 +48,13 @@ def lstm_cell(ReLu = False):
 	return tf.contrib.rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True, activation=tf.tanh)
 
 
-def rnn_cell(ReLu = False):
-	if ReLu:
-		return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
-	return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.tanh)
+def rnn_cell():
+	return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
 
 
 def gru_cell(ReLu = False):
 	if ReLu:
-		return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
+		return tf.contrib.rnn.GRUCell(num_units=hidden_dim, activation=tf.nn.relu)
 	return tf.contrib.rnn.GRUCell(num_units=hidden_dim, activation=tf.nn.tanh)
 
 
@@ -72,7 +70,7 @@ testX, testY = testData[0], np.reshape(testData[1], (-1, 1))
 X = tf.placeholder(tf.float32, [None, seq_length, data_dim])
 Y = tf.placeholder(tf.float32, [None, 1])
 
-multi_cells = tf.contrib.rnn.MultiRNNCell([lstm_cell(True) for _ in range(num_stacked_layers)], state_is_tuple=True)
+multi_cells = tf.contrib.rnn.MultiRNNCell([gru_cell(True) for _ in range(num_stacked_layers)], state_is_tuple=True)
 outputs, _ = tf.nn.dynamic_rnn(multi_cells, X, dtype=tf.float32)
 Y_pred = tf.contrib.layers.fully_connected(outputs[:, -1], output_dim, activation_fn=None)
 

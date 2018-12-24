@@ -8,7 +8,7 @@ import os
 tf.set_random_seed(777)
 
 # train Parameters
-seq_length = 7
+seq_length = 30
 data_dim = 5
 hidden_dim = 5
 output_dim = 1

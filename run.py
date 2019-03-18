@@ -3,19 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import openpyxl
 import os
+import time
 
-
-tf.set_random_seed(777)
+tf.set_random_seed(3)
 
 # train Parameters
-seq_length = 30
+seq_length = 21
 data_dim = 5
 hidden_dim = 5
 output_dim = 1
 num_stacked_layers = 3
 learning_rate = 0.001
 num_epoch = 5000
-check_step = 10000
+check_step = 1000
 
 def MinMaxScaler(data):
 	numerator = data - np.min(data, 0)
@@ -42,14 +42,17 @@ def read(s, e):
 			dataY.append(_y)
 	return dataX, dataY
 
+
 def lstm_cell(ReLu = False):
 	if ReLu:
 		return tf.contrib.rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True, activation=tf.nn.relu)
 	return tf.contrib.rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True, activation=tf.tanh)
 
 
-def rnn_cell():
-	return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
+def rnn_cell(ReLU = False):
+	if ReLU:
+		return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.nn.relu)
+	return tf.contrib.rnn.BasicRNNCell(num_units=hidden_dim, activation=tf.tanh)
 
 
 def gru_cell(ReLu = False):
@@ -70,13 +73,13 @@ testX, testY = testData[0], np.reshape(testData[1], (-1, 1))
 X = tf.placeholder(tf.float32, [None, seq_length, data_dim])
 Y = tf.placeholder(tf.float32, [None, 1])
 
-multi_cells = tf.contrib.rnn.MultiRNNCell([gru_cell(True) for _ in range(num_stacked_layers)], state_is_tuple=True)
+multi_cells = tf.contrib.rnn.MultiRNNCell([rnn_cell(False) for _ in range(num_stacked_layers)], state_is_tuple=True)
 outputs, _ = tf.nn.dynamic_rnn(multi_cells, X, dtype=tf.float32)
 Y_pred = tf.contrib.layers.fully_connected(outputs[:, -1], output_dim, activation_fn=None)
 
 loss = tf.reduce_sum(tf.square(Y_pred - Y))
 
-optimizer = tf.train.AdamOptimizer(learning_rate)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate)
 train = optimizer.minimize(loss)
 
 targets = tf.placeholder(tf.float32, [None, 1])
@@ -84,6 +87,7 @@ predictions = tf.placeholder(tf.float32, [None, 1])
 rmse = tf.sqrt(tf.reduce_mean(tf.square(targets - predictions)))
 
 
+start_time = time.time()
 with tf.Session() as sess:
 	sess.run(tf.global_variables_initializer())
 
@@ -144,3 +148,4 @@ with tf.Session() as sess:
 	# plt.plot(test_y)
 	# plt.show()
 
+print("Finish, {:.3f}s".format(time.time() - start_time))
